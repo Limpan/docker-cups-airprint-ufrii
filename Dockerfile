@@ -1,12 +1,14 @@
-FROM ubuntu:zesty
+FROM ubuntu:bionic
+
+ENV CANON_DRIVER_URL='http://gdlp01.c-wss.com/gds/8/0100007658/08/linux-UFRII-drv-v370-uken-05.tar.gz'
 
 # Add repos
-RUN echo 'deb http://us.archive.ubuntu.com/ubuntu/ zesty multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
-	echo 'deb-src http://us.archive.ubuntu.com/ubuntu/ zesty multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
-	echo 'deb http://us.archive.ubuntu.com/ubuntu/ zesty-updates multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
-	echo 'deb-src http://us.archive.ubuntu.com/ubuntu/ zesty-updates multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
-	echo 'deb http://archive.ubuntu.com/ubuntu/ zesty-security multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
-	echo 'deb-src http://archive.ubuntu.com/ubuntu/ zesty-security multiverse' >> /etc/apt/sources.list.d/multiverse.list
+RUN echo 'deb http://us.archive.ubuntu.com/ubuntu/ bionic multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
+	echo 'deb-src http://us.archive.ubuntu.com/ubuntu/ bionic multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
+	echo 'deb http://us.archive.ubuntu.com/ubuntu/ bionic-updates multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
+	echo 'deb-src http://us.archive.ubuntu.com/ubuntu/ bionic-updates multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
+	echo 'deb http://archive.ubuntu.com/ubuntu/ bionic-security multiverse' >> /etc/apt/sources.list.d/multiverse.list && \
+	echo 'deb-src http://archive.ubuntu.com/ubuntu/ bionic-security multiverse' >> /etc/apt/sources.list.d/multiverse.list
 
 # Install the packages we need. Avahi will be included
 RUN apt-get update && apt-get install -y \
@@ -14,8 +16,19 @@ RUN apt-get update && apt-get install -y \
 	cups \
 	cups-pdf \
 	inotify-tools \
+	libglade2-0 \
+  libpango1.0-0 \
+  libpng16-16 \
 	python-cups \
+	curl \
 && rm -rf /var/lib/apt/lists/*
+
+# Install UFRII drivers
+RUN curl $CANON_DRIVER_URL | tar xz && \
+    dpkg -i *-UFRII-*/64-bit_Driver/Debian/*common*.deb && \
+    dpkg -i *-UFRII-*/64-bit_Driver/Debian/*ufr2*.deb && \
+    dpkg -i *-UFRII-*/64-bit_Driver/Debian/*utility*.deb && \
+    rm -rf *-UFRII-*
 
 # This will use port 631
 EXPOSE 631
@@ -37,4 +50,3 @@ RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf && 
 	sed -i 's/<Location \/admin\/conf>/<Location \/admin\/conf>\n  Allow All/' /etc/cups/cupsd.conf && \
 	echo "ServerAlias *" >> /etc/cups/cupsd.conf && \
 	echo "DefaultEncryption Never" >> /etc/cups/cupsd.conf
-
